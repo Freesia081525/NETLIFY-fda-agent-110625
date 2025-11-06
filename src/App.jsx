@@ -576,4 +576,39 @@ const AgenticDocProcessor = () => {
                     <div
                       key={idx}
                       className={`p-4 rounded-lg border-2 ${
-                        idx < currentAgentIndex ? 'opacity-100' : idx === currentAgentIndex ? 'opacity-100' : 'opacity
+                        idx < currentAgentIndex ? 'opacity-100' : idx === currentAgentIndex ? 'opacity-100' : 'opacity-50'
+                      }`}
+                      style={{
+                        borderColor: agentOutputs[idx].output ? style.accent : style.primary,
+                        backgroundColor: style.secondary
+                      }}
+                    >
+                       <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-3 h-3 rounded-full ${
+                              agentOutputs[idx].output ? '' : 'animate-pulse'
+                            }`}
+                            style={{backgroundColor: agentOutputs[idx].output ? style.accent : 'gray'}}
+                          ></div>
+                          <p className="font-bold">{agent.name}</p>
+                        </div>
+                        {agentOutputs[idx].output && (
+                          <span className="text-xs font-mono">{agentOutputs[idx].time.toFixed(2)}s</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+};
+
+export default AgenticDocProcessor;
