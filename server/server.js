@@ -1,19 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
 
-// --- NEW: Import and configure AI clients ---
+// --- NEW: Import PythonShell ---
+const { PythonShell } = require('python-shell');
+
+// --- OpenAI client remains the same ---
 const OpenAI = require('@openai/api');
-const vision = require('@google-cloud/vision');
-
-// Initialize OpenAI client
-// The API key is automatically read from the OPENAI_API_KEY environment variable
 const openai = new OpenAI();
-
-// Initialize Google Cloud Vision client
-// The credentials are automatically read from the GOOGLE_APPLICATION_CREDENTIALS environment variable
-// which Render sets for us when we create the secret file.
-const visionClient = new vision.ImageAnnotatorClient();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,66 +19,71 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB file limit
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 /**
- * API ENDPOINT: /api/ocr (NOW REAL)
- * Uses Google Cloud Vision to perform OCR on an uploaded PDF.
+ * API ENDPOINT: /api/ocr (NOW USES PYTHON)
+ * Saves the PDF temporarily, runs a Python script for OCR, and returns the result.
  */
 app.post('/api/ocr', upload.single('file'), async (req, res) => {
-  try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded.' });
+        return res.status(400).json({ error: 'No file uploaded.' });
     }
-    console.log(`Received OCR request for file: ${req.body.fileName}`);
+    
+    // Create a temporary file path
+    const tempFilePath = path.join(os.tmpdir(), `upload_${Date.now()}_${req.body.fileName}`);
+    
+    try {
+        // Write the uploaded file buffer to the temporary file
+        fs.writeFileSync(tempFilePath, req.file.buffer);
+        console.log(`File saved temporarily to ${tempFilePath}`);
 
-    const fileBuffer = req.file.buffer;
+        const { ocrLanguage } = req.body;
+        
+        const options = {
+            mode: 'text',
+            pythonOptions: ['-u'], // get print results in real-time
+            scriptPath: './ocr_scripts/', // Path to the python script
+            args: [tempFilePath, ocrLanguage] // Pass file path and language as arguments
+        };
 
-    const request = {
-      inputConfig: {
-        mimeType: 'application/pdf',
-        content: fileBuffer,
-      },
-      features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
-    };
+        // Run the Python script
+        const results = await PythonShell.run('process_pdf.py', options);
+        const ocrText = results.join('\n');
+        
+        console.log("OCR processing finished successfully.");
+        res.json({ ocrText });
 
-    // Perform the OCR using Google Cloud Vision API
-    const [result] = await visionClient.batchAnnotateFiles({ requests: [request] });
-    const fullTextAnnotation = result.responses[0].responses[0].fullTextAnnotation;
-
-    if (!fullTextAnnotation || !fullTextAnnotation.text) {
-        return res.status(500).json({ ocrText: "OCR successful, but no text was found in the document."});
+    } catch (error) {
+        console.error('Python OCR Script Error:', error);
+        res.status(500).json({ error: 'Failed to process file with Python OCR.', details: error.message });
+    } finally {
+        // --- IMPORTANT: Clean up the temporary file ---
+        if (fs.existsSync(tempFilePath)) {
+            fs.unlinkSync(tempFilePath);
+            console.log(`Cleaned up temporary file: ${tempFilePath}`);
+        }
     }
-
-    res.json({ ocrText: fullTextAnnotation.text });
-
-  } catch (error) {
-    console.error('Google Vision OCR Error:', error);
-    res.status(500).json({ error: 'Failed to process file with Google Cloud Vision.', details: error.message });
-  }
 });
 
 /**
- * API ENDPOINT: /api/agent (NOW REAL)
+ * API ENDPOINT: /api/agent (No changes needed here)
  * Uses the OpenAI API to execute an agent's prompt.
  */
 app.post('/api/agent', async (req, res) => {
+    // This function remains exactly the same
     const { agent, inputText } = req.body;
     console.log(`Received agent execution request for: ${agent.name}`);
-    
     try {
         const completion = await openai.chat.completions.create({
-            model: agent.model, // e.g., "gpt-4o-mini"
+            model: agent.model,
             temperature: agent.temperature,
             messages: [
                 { role: "system", content: "You are a helpful assistant designed to analyze documents." },
                 { role: "user", content: `${agent.prompt}\n\nHere is the document text:\n\n---\n\n${inputText}` }
             ]
         });
-
-        const output = completion.choices[0].message.content;
-        res.json({ output });
-
+        res.json({ output: completion.choices[0].message.content });
     } catch (error) {
         console.error('OpenAI API Error:', error);
         res.status(500).json({ error: 'Failed to execute agent with OpenAI API.', details: error.message });
@@ -89,5 +91,5 @@ app.post('/api/agent', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
