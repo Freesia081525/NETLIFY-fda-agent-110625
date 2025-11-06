@@ -1,0 +1,222 @@
+agents:
+  # === 第一階段：基礎文件分析 (1-7) ===
+  - name: "文件結構分析器"
+    prompt: "請分析這份文件的整體結構，包括章節、段落組織、標題層級，並識別文件類型（如：研究報告、法規文件、臨床試驗報告等）。"
+    model: "gemini-2.5-flash"
+    temperature: 0.3
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "關鍵資訊提取器"
+    prompt: "從文件中提取所有關鍵資訊，包括：藥品名稱、成分、適應症、用法用量、禁忌症、不良反應等FDA核心審查要素。"
+    model: "gpt-4o-mini"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "法規合規性掃描器"
+    prompt: "檢查文件是否符合FDA法規要求，識別可能的合規性問題，包括：標籤要求、臨床數據充分性、安全性報告完整性等。"
+    model: "gpt-4.1-mini"
+    temperature: 0.3
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "術語標準化器"
+    prompt: "識別並標準化文件中的醫學術語、藥物名稱、疾病名稱，確保符合FDA認可的術語標準（如MedDRA、SNOMED CT）。"
+    model: "gemini-2.5-flash"
+    temperature: 0.2
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "日期與時間軸提取器"
+    prompt: "提取文件中所有重要日期和時間點，建立時間軸，包括：研發階段、臨床試驗時程、申請日期、審查里程碑等。"
+    model: "gpt-4o-mini"
+    temperature: 0.3
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "數據完整性驗證器"
+    prompt: "檢查文件中的數據完整性，識別缺失數據、不一致數據、異常值，並標記需要進一步核實的資訊。"
+    model: "gemini-2.5-flash"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "參考文獻分析器"
+    prompt: "分析文件中引用的所有參考文獻，評估引用的適當性、文獻品質、是否包含關鍵支持性研究。"
+    model: "gpt-4o-mini"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  # === 第二階段：臨床與安全性分析 (8-14) ===
+  - name: "臨床試驗數據分析器"
+    prompt: "深入分析臨床試驗數據，包括：試驗設計、受試者特徵、主要療效指標、次要終點、統計方法和結果解讀。"
+    model: "gpt-4.1-mini"
+    temperature: 0.5
+    top_p: 0.9
+    max_tokens: 3072
+
+  - name: "安全性評估專家"
+    prompt: "全面評估藥物安全性資訊，包括：不良事件發生率、嚴重不良反應、藥物交互作用、特殊人群風險、長期安全性數據。"
+    model: "gpt-4o-mini"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "療效評價分析器"
+    prompt: "評估藥物療效證據的充分性和說服力，分析主要療效指標是否達標、臨床意義、與現有治療的比較。"
+    model: "gemini-2.5-flash"
+    temperature: 0.5
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "風險效益評估器"
+    prompt: "進行綜合風險效益分析，權衡藥物的治療效益與潛在風險，提供平衡的評估意見。"
+    model: "gpt-4.1-mini"
+    temperature: 0.5
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "特殊人群數據審查員"
+    prompt: "審查特殊人群（兒童、老年人、孕婦、肝腎功能不全患者）的數據，評估數據充分性和用藥建議的合理性。"
+    model: "gpt-4o-mini"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "劑量合理性分析器"
+    prompt: "分析推薦劑量的合理性，包括劑量選擇依據、劑量調整方案、藥代動力學/藥效學關係。"
+    model: "gemini-2.5-flash"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "長期使用安全性評估器"
+    prompt: "評估藥物長期使用的安全性數據，識別潛在的長期風險、耐受性問題、依賴性風險等。"
+    model: "gpt-4o-mini"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  # === 第三階段：品質與製造分析 (15-21) ===
+  - name: "藥品品質資訊審查員"
+    prompt: "審查藥品品質相關資訊，包括：原料藥規格、製劑組成、品質標準、穩定性數據、包裝材料。"
+    model: "gemini-2.5-flash"
+    temperature: 0.3
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "製造流程分析器"
+    prompt: "分析製造流程的合理性和可控性，包括：生產工藝、品質控制點、關鍵工藝參數、驗證策略。"
+    model: "gpt-4o-mini"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "穩定性數據評估器"
+    prompt: "評估穩定性研究數據的充分性，包括：儲存條件、測試時間點、降解產物、有效期支持性數據。"
+    model: "gemini-2.5-flash"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "分析方法驗證審查員"
+    prompt: "審查分析方法的驗證數據，包括：特異性、準確度、精密度、線性範圍、檢測限、定量限。"
+    model: "gpt-4o-mini"
+    temperature: 0.3
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "雜質與降解產物分析器"
+    prompt: "分析雜質譜和降解產物資訊，評估雜質控制策略的adequacy、安全性評估的完整性。"
+    model: "gemini-2.5-flash"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "包裝與標籤審查員"
+    prompt: "審查包裝材料的適當性、標籤內容的完整性和準確性，確保符合FDA標籤法規要求。"
+    model: "gpt-4o-mini"
+    temperature: 0.3
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "GMP合規性評估器"
+    prompt: "評估製造商的GMP合規性資訊，包括：設施檢查記錄、品質體系、變更控制、偏差處理。"
+    model: "gpt-4.1-mini"
+    temperature: 0.3
+    top_p: 0.9
+    max_tokens: 2048
+
+  # === 第四階段：進階分析與洞察 (22-28) ===
+  - name: "統計分析審查專家"
+    prompt: "深入審查統計分析方法的適當性，包括：統計檢定選擇、樣本量計算、多重比較校正、缺失數據處理。"
+    model: "gpt-4.1-mini"
+    temperature: 0.5
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "生物等效性評估器"
+    prompt: "評估生物等效性研究數據（如適用），包括：研究設計、藥代動力學參數、等效性判定標準。"
+    model: "gemini-2.5-flash"
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "藥物經濟學分析器"
+    prompt: "分析藥物的成本效益，包括：治療成本、健康效益、與現有療法的經濟學比較（如文件中包含此類資訊）。"
+    model: "gpt-4o-mini"
+    temperature: 0.5
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "真實世界證據評估器"
+    prompt: "評估真實世界數據和證據（RWD/RWE）的品質和相關性，如文件中包含上市後研究或觀察性研究數據。"
+    model: "gpt-4.1-mini"
+    temperature: 0.5
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "創新性評估專家"
+    prompt: "評估藥物的創新性和臨床價值，包括：新穎作用機制、未滿足醫療需求、突破性治療潛力。"
+    model: "gpt-4o-mini"
+    temperature: 0.6
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "競品比較分析器"
+    prompt: "將此藥物與同類競品進行比較分析，包括：療效差異、安全性對比、使用便利性、市場定位。"
+    model: "gemini-2.5-flash"
+    temperature: 0.5
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "潛在問題識別器"
+    prompt: "識別文件中可能影響審批的潛在問題和風險點，包括：數據缺口、方法學缺陷、合規性疑慮。"
+    model: "gpt-4.1-mini"
+    temperature: 0.5
+    top_p: 0.9
+    max_tokens: 2048
+
+  # === 第五階段：綜合報告與建議 (29-31) ===
+  - name: "審查意見綜合器"
+    prompt: "綜合前述所有分析結果，整理關鍵發現、主要優勢、主要缺陷，形成結構化的審查意見摘要。"
+    model: "gpt-4.1-mini"
+    temperature: 0.5
+    top_p: 0.9
+    max_tokens: 3072
+
+  - name: "建議措施生成器"
+    prompt: "基於識別的問題，提出具體的建議措施，包括：需要補充的數據、需要修正的內容、風險緩解策略、後續監測建議。"
+    model: "gpt-4o-mini"
+    temperature: 0.6
+    top_p: 0.9
+    max_tokens: 2048
+
+  - name: "最終報告編寫器"
+    prompt: "編寫完整的FDA審查分析報告，包括：執行摘要、詳細發現、風險評估、審批建議、條件建議（如適用），確保報告結構清晰、邏輯嚴謹、結論明確。"
+    model: "gpt-4.1-mini"
+    temperature: 0.5
+    top_p: 0.9
+    max_tokens: 4096
