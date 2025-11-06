@@ -2,77 +2,90 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 
+// --- NEW: Import and configure AI clients ---
+const OpenAI = require('@openai/api');
+const vision = require('@google-cloud/vision');
+
+// Initialize OpenAI client
+// The API key is automatically read from the OPENAI_API_KEY environment variable
+const openai = new OpenAI();
+
+// Initialize Google Cloud Vision client
+// The credentials are automatically read from the GOOGLE_APPLICATION_CREDENTIALS environment variable
+// which Render sets for us when we create the secret file.
+const visionClient = new vision.ImageAnnotatorClient();
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors()); // Allow requests from our Netlify frontend
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Multer setup for handling file uploads in memory
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB file limit
 
 /**
- * API ENDPOINT: /api/ocr
- * Handles PDF file uploads and simulates OCR processing.
+ * API ENDPOINT: /api/ocr (NOW REAL)
+ * Uses Google Cloud Vision to perform OCR on an uploaded PDF.
  */
-app.post('/api/ocr', upload.single('file'), (req, res) => {
+app.post('/api/ocr', upload.single('file'), async (req, res) => {
   try {
-    const { fileName, ocrMethod, pythonOcrPackage, ocrLanguage, selectedPages } = req.body;
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded.' });
+    }
+    console.log(`Received OCR request for file: ${req.body.fileName}`);
 
-    console.log('Received OCR request:', { fileName, ocrMethod });
+    const fileBuffer = req.file.buffer;
 
-    // Simulate a 2.5 second processing time
-    setTimeout(() => {
-        let ocrResult = `--- SIMULATED BACKEND OCR RESULT ---\n`;
-        ocrResult += `File: ${fileName}\n`;
-        ocrResult += `Language: ${ocrLanguage}\n`;
-        ocrResult += `Pages: ${selectedPages}\n\n`;
+    const request = {
+      inputConfig: {
+        mimeType: 'application/pdf',
+        content: fileBuffer,
+      },
+      features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+    };
 
-        if (ocrMethod === 'llm') {
-            ocrResult += `Method: LLM-based OCR\n`;
-            ocrResult += `--- [LLM Model Vision Analysis] ---\nThis text was processed by the backend server using a simulated LLM Vision model.\n\n`;
-        } else {
-            ocrResult += `Method: Python Package (${pythonOcrPackage})\n`;
-            switch (pythonOcrPackage) {
-                case 'tesseract':
-                    ocrResult += `--- [Tesseract OCR Engine] ---\nSimulated Tesseract output from the backend, which may c0ntain small errors.\n\n`;
-                    break;
-                case 'easyocr':
-                    ocrResult += `--- [EasyOCR Engine] ---\nSimulated EasyOCR output from the backend, known for good multi-language handling.\n\n`;
-                    break;
-                case 'paddleocr':
-                    ocrResult += `--- [PaddleOCR Engine] ---\nSimulated PaddleOCR output from the backend, great for complex layouts.\n\n`;
-                    break;
-            }
-        }
-        ocrResult += `--- END OF SIMULATION ---`;
-        
-        res.json({ ocrText: ocrResult });
+    // Perform the OCR using Google Cloud Vision API
+    const [result] = await visionClient.batchAnnotateFiles({ requests: [request] });
+    const fullTextAnnotation = result.responses[0].responses[0].fullTextAnnotation;
 
-    }, 2500);
+    if (!fullTextAnnotation || !fullTextAnnotation.text) {
+        return res.status(500).json({ ocrText: "OCR successful, but no text was found in the document."});
+    }
+
+    res.json({ ocrText: fullTextAnnotation.text });
 
   } catch (error) {
-    console.error('OCR Error:', error);
-    res.status(500).json({ error: 'Failed to process file' });
+    console.error('Google Vision OCR Error:', error);
+    res.status(500).json({ error: 'Failed to process file with Google Cloud Vision.', details: error.message });
   }
 });
 
 /**
- * API ENDPOINT: /api/agent
- * Receives text and agent parameters, then simulates AI agent execution.
+ * API ENDPOINT: /api/agent (NOW REAL)
+ * Uses the OpenAI API to execute an agent's prompt.
  */
-app.post('/api/agent', (req, res) => {
+app.post('/api/agent', async (req, res) => {
     const { agent, inputText } = req.body;
+    console.log(`Received agent execution request for: ${agent.name}`);
     
-    console.log('Received agent execution request for:', agent.name);
-    
-    // Simulate a 1.5 second API call
-    setTimeout(() => {
-        const simulatedOutput = `[${agent.name} Result from Backend]\nBased on prompt: "${agent.prompt}"\nModel: ${agent.model}\n\nThis is a simulated output from the Render server. It demonstrates that the frontend successfully sent data to the backend for processing.`;
-        res.json({ output: simulatedOutput });
-    }, 1500);
+    try {
+        const completion = await openai.chat.completions.create({
+            model: agent.model, // e.g., "gpt-4o-mini"
+            temperature: agent.temperature,
+            messages: [
+                { role: "system", content: "You are a helpful assistant designed to analyze documents." },
+                { role: "user", content: `${agent.prompt}\n\nHere is the document text:\n\n---\n\n${inputText}` }
+            ]
+        });
+
+        const output = completion.choices[0].message.content;
+        res.json({ output });
+
+    } catch (error) {
+        console.error('OpenAI API Error:', error);
+        res.status(500).json({ error: 'Failed to execute agent with OpenAI API.', details: error.message });
+    }
 });
 
 app.listen(PORT, () => {
