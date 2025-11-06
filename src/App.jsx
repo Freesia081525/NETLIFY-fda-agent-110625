@@ -71,10 +71,7 @@ const AgenticDocProcessor = () => {
       reader.readAsText(file);
     }
   };
-  
-  /**
-   * Simulates a real OCR process with delays and method-specific output.
-   */
+
   const simulateOcrProcessing = async () => {
     let ocrResult = `--- SIMULATED OCR RESULT ---\n`;
     ocrResult += `File: ${fileName}\n`;
@@ -105,7 +102,6 @@ const AgenticDocProcessor = () => {
     
     ocrResult += `--- END OF SIMULATION ---`;
     
-    // Simulate network/processing delay
     await new Promise(resolve => setTimeout(resolve, 2500));
     
     return ocrResult;
@@ -125,6 +121,12 @@ const AgenticDocProcessor = () => {
     setIsProcessingOcr(false);
     setStep('preview');
   };
+
+  // --- MODIFICATION START: Handler for the editable textarea ---
+  const handleDocumentChange = (e) => {
+    setDocument(e.target.value);
+  };
+  // --- MODIFICATION END ---
 
   const executeAgent = async (index) => {
     setIsExecutingAgents(true);
@@ -224,7 +226,7 @@ const AgenticDocProcessor = () => {
           </div>
         </div>
 
-        {/* Step: Upload */}
+        {/* Step: Upload (No changes in this section) */}
         {step === 'upload' && (
           <div className="max-w-4xl mx-auto">
             <div className={`${theme.card} rounded-2xl p-8 border-2`} style={{ borderColor: style.primary }}>
@@ -291,14 +293,23 @@ const AgenticDocProcessor = () => {
           </div>
         )}
 
-        {/* Step: Preview */}
+        {/* --- MODIFICATION START: Step: Preview --- */}
         {step === 'preview' && (
           <div className="max-w-6xl mx-auto">
             <div className={`${theme.card} rounded-2xl p-8 border-2`} style={{ borderColor: style.primary }}>
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Eye style={{ color: style.accent }} /> 文件預覽</h2>
-              <div className="mb-6 p-6 rounded-xl border-2 max-h-96 overflow-auto" style={{ backgroundColor: style.secondary, borderColor: style.primary }}>
-                <pre className="whitespace-pre-wrap">{document || "沒有可預覽的內容。"}</pre>
+              
+              <label className="block font-semibold mb-2">可編輯的OCR預覽結果</label>
+              <div className="mb-6">
+                <textarea
+                  value={document}
+                  onChange={handleDocumentChange}
+                  className={`w-full p-4 rounded-xl border-2 h-96 font-mono text-sm resize-none ${theme.bg}`}
+                  style={{ borderColor: style.primary }}
+                  placeholder="沒有可預覽的內容。在此處編輯文本..."
+                />
               </div>
+
               <div className="flex gap-4">
                 <button onClick={() => setStep('upload')} className="flex-1 py-3 rounded-xl font-bold border-2 hover:opacity-80" style={{ borderColor: style.accent, color: style.accent }}>返回</button>
                 <button onClick={() => setStep('config')} className="flex-1 py-3 rounded-xl font-bold text-white hover:opacity-90" style={{ backgroundColor: style.accent }}>下一步：設定代理</button>
@@ -306,8 +317,9 @@ const AgenticDocProcessor = () => {
             </div>
           </div>
         )}
+        {/* --- MODIFICATION END --- */}
 
-        {/* Step: Config */}
+        {/* Step: Config (No changes in this section) */}
         {step === 'config' && (
           <div className="max-w-6xl mx-auto">
             <div className={`${theme.card} rounded-2xl p-8 border-2`} style={{ borderColor: style.primary }}>
@@ -348,7 +360,7 @@ const AgenticDocProcessor = () => {
           </div>
         )}
 
-        {/* Step: Execute */}
+        {/* Step: Execute (No changes in this section) */}
         {step === 'execute' && (
           <div className="max-w-7xl mx-auto">
             <div className={`${theme.card} rounded-2xl p-8 border-2 mb-6`} style={{ borderColor: style.primary }}>
