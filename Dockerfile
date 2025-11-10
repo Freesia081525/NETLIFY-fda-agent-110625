@@ -1,34 +1,30 @@
-# Base image with Node.js 18 (includes npm) and Debian slim
+# Stage 1: Base image with Node.js, Python, and Tesseract
 FROM node:18-slim
 
 # Set working directory
-WORKDIR /opt/render/project/server
+WORKDIR /opt/render/project/src
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies needed for Python OCR
+# - python3 and pip for running our script
+# - poppler-utils for the pdf2image library
+# - tesseract-ocr and its Chinese language pack
+RUN apt-get update && apt-get install -y poppler-utils \
     python3 \
     python3-pip \
     poppler-utils \
     tesseract-ocr \
     tesseract-ocr-chi-tra \
-    build-essential \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Python dependencies
-COPY ocr_scripts/requirements.txt .
+# Copy Python requirements and install them
+COPY ocr_scripts/requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Install Node.js dependencies
+# Copy the rest of the project files
+# We copy package files first to leverage Docker layer caching
 COPY package.json ./
 COPY server/package.json ./server/
-RUN npm install --legacy-peer-deps
-
-# Copy the rest of the project
+RUN npm install
 COPY . .
 
-# Start the server
+# Set the start command for the server
 CMD ["node", "server/server.js"]
