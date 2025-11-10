@@ -24,6 +24,7 @@ const AgenticDocProcessor = () => {
   const [themeMode, setThemeMode] = useState('light');
   const [flowerStyle, setFlowerStyle] = useState(0);
   const [fileObject, setFileObject] = useState(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null); // New state for PDF preview URL
   const [document, setDocument] = useState('');
   const [fileName, setFileName] = useState('');
   const [ocrMethod, setOcrMethod] = useState('python'); // 'python' or 'llm'
@@ -51,12 +52,40 @@ const AgenticDocProcessor = () => {
     setAgentOutputs(defaultAgents.map(() => ({ input: '', output: '', time: 0 })));
   }, []);
 
+  // Effect to handle cleanup of the object URL
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) {
+        URL.revokeObjectURL(pdfPreviewUrl);
+      }
+    };
+  }, [pdfPreviewUrl]);
+
   const handleFileUpload = (e) => {
+    // Revoke the old URL if it exists, to prevent memory leaks
+    if (pdfPreviewUrl) {
+      URL.revokeObjectURL(pdfPreviewUrl);
+    }
+
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      setFileObject(null);
+      setFileName('');
+      setPdfPreviewUrl(null);
+      return;
+    }
+
     setFileName(file.name);
     setFileObject(file);
     setDocument('');
+
+    // If the file is a PDF, create a preview URL
+    if (file.type === 'application/pdf') {
+      const url = URL.createObjectURL(file);
+      setPdfPreviewUrl(url);
+    } else {
+      setPdfPreviewUrl(null);
+    }
   };
 
   const handleProcessAndPreview = async () => {
@@ -214,6 +243,20 @@ const AgenticDocProcessor = () => {
 
               {fileName && <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: style.secondary }}><p className="font-semibold">已選擇: {fileName}</p></div>}
 
+              {/* --- NEW: PDF PREVIEW --- */}
+              {pdfPreviewUrl && (
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-2 text-lg">PDF 預覽</h3>
+                  <div className="border-2 rounded-lg overflow-hidden" style={{ borderColor: style.primary }}>
+                    <iframe
+                      src={pdfPreviewUrl}
+                      className="w-full h-[600px]" // Set a height for the previewer
+                      title="PDF Preview"
+                    ></iframe>
+                  </div>
+                </div>
+              )}
+
               {fileObject && (
                 <div className="space-y-4 mb-6">
                     <div>
@@ -221,7 +264,7 @@ const AgenticDocProcessor = () => {
                         <select 
                           value={ocrMethod} 
                           onChange={(e) => setOcrMethod(e.target.value)} 
-                          className="w-full p-3 rounded-lg border-2" 
+                          className={`w-full p-3 rounded-lg border-2 ${theme.bg}`}
                           style={{ borderColor: style.primary }}
                           disabled={fileObject.type !== 'application/pdf'}
                         >
@@ -235,7 +278,7 @@ const AgenticDocProcessor = () => {
                         <select 
                           value={ocrLanguage} 
                           onChange={(e) => setOcrLanguage(e.target.value)} 
-                          className="w-full p-3 rounded-lg border-2" 
+                          className={`w-full p-3 rounded-lg border-2 ${theme.bg}`}
                           style={{ borderColor: style.primary }}
                           disabled={fileObject.type !== 'application/pdf'}
                         >
@@ -357,7 +400,7 @@ const AgenticDocProcessor = () => {
                 </div>
               )}
 
-              {currentAgentIndex >= selectedAgentIndex - 1 && agentOutputs[selectedAgentCount-1]?.output && (
+              {currentAgentIndex >= selectedAgentCount - 1 && agentOutputs[selectedAgentCount-1]?.output && (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">🎉</div>
                   <h3 className="text-3xl font-bold mb-6" style={{ color: style.accent }}>所有代理執行完成！</h3>
