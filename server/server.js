@@ -8,8 +8,8 @@ const os = require('os');
 // --- NEW: Import PythonShell ---
 const { PythonShell } = require('python-shell');
 
-// --- OpenAI client remains the same ---
-const OpenAI = require('@openai/api');
+// --- CORRECTED: Import the official OpenAI package ---
+const { OpenAI } = require('openai');
 const openai = new OpenAI();
 
 const app = express();
