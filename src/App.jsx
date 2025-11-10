@@ -1,4 +1,3 @@
-#const RENDER_API_URL = "https://netlify-fda-agent-110625-1.onrender.com"; // <-- PASTE YOUR RENDER URL HERE
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Settings, Play, ChevronRight, Eye, Download, Moon, Sun, Palette, X, Sparkles, Flower2 } from 'lucide-react';
 
