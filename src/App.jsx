@@ -3,7 +3,7 @@ import { Upload, FileText, Settings, Play, ChevronRight, Eye, Download, Moon, Su
 
 // --- MODIFICATION: Hardcode your Render backend URL here ---
 // Replace the placeholder URL with the actual URL of your backend service deployed on Render.
-const RENDER_API_URL = "https://your-backend-name.onrender.com"; // <-- PASTE YOUR RENDER URL HERE
+const RENDER_API_URL = "https://netlify-fda-agent-110625-1.onrender.com"; // <-- PASTE YOUR RENDER URL HERE
 
 const AgenticDocProcessor = () => {
   // Theme and style configurations
