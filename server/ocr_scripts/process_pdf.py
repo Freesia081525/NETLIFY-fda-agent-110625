@@ -7,6 +7,11 @@ from pdf2image import convert_from_path
 import pytesseract
 
 # --- Helper Functions for Different File Types ---
+try:
+    from pdf2image import convert_from_path
+except ImportError:
+    print("pdf2image is not installed. Please add it to your requirements and ensure Poppler is available.", file=sys.stderr)
+    sys.exit(1)
 
 def extract_text_from_docx(file_path):
     """Extracts text content from a .docx file."""
