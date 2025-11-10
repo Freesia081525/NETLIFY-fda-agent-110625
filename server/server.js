@@ -4,74 +4,107 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-
-// --- NEW: Import PythonShell ---
 const { PythonShell } = require('python-shell');
-
-// --- CORRECTED: Import the official OpenAI package ---
 const { OpenAI } = require('openai');
-const openai = new OpenAI();
 
+const openai = new OpenAI();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' })); // Increase limit for potential base64 images
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } }); // 20MB limit for PDFs
 
 /**
- * API ENDPOINT: /api/ocr (NOW USES PYTHON)
- * Saves the PDF temporarily, runs a Python script for OCR, and returns the result.
+ * API ENDPOINT: /api/ocr (NOW WITH LLM/PYTHON ROUTING)
  */
 app.post('/api/ocr', upload.single('file'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded.' });
     }
     
-    // Create a temporary file path
     const tempFilePath = path.join(os.tmpdir(), `upload_${Date.now()}_${req.body.fileName}`);
-    
+    const { ocrLanguage, ocrMethod } = req.body; // Get the user's choice
+
     try {
-        // Write the uploaded file buffer to the temporary file
         fs.writeFileSync(tempFilePath, req.file.buffer);
-        console.log(`File saved temporarily to ${tempFilePath}`);
+        console.log(`File saved to ${tempFilePath}, chosen method: ${ocrMethod}`);
 
-        const { ocrLanguage } = req.body;
-        
-        const options = {
-            mode: 'text',
-            pythonOptions: ['-u'], // get print results in real-time
-            scriptPath: './ocr_scripts/', // Path to the python script
-            args: [tempFilePath, ocrLanguage] // Pass file path and language as arguments
-        };
+        let ocrText = "";
 
-        // Run the Python script
-        const results = await PythonShell.run('process_pdf.py', options);
-        const ocrText = results.join('\n');
+        if (ocrMethod === 'llm') {
+            // --- LLM-based OCR (GPT-4o) ---
+            console.log("Starting LLM-based OCR with GPT-4o...");
+            
+            // 1. Convert PDF to base64 images using our new Python script
+            const imageOptions = {
+                mode: 'text',
+                pythonOptions: ['-u'],
+                scriptPath: './ocr_scripts/',
+                args: [tempFilePath]
+            };
+            const results = await PythonShell.run('pdf_to_images.py', imageOptions);
+            const base64Images = JSON.parse(results[0]);
+
+            // 2. Prepare the request for OpenAI GPT-4o
+            const messages = [
+                {
+                    role: "user",
+                    content: [
+                        {
+                            type: "text",
+                            text: "You are an expert OCR engine. Extract all text from the following document pages exactly as it appears. Preserve the original line breaks and formatting as best as possible."
+                        },
+                        // Add each page as an image
+                        ...base64Images.map(imageBase64 => ({
+                            type: "image_url",
+                            image_url: { "url": imageBase64 }
+                        }))
+                    ],
+                },
+            ];
+
+            // 3. Call the OpenAI API
+            const response = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: messages,
+                max_tokens: 4000,
+            });
+            
+            ocrText = response.choices[0].message.content;
+
+        } else {
+            // --- Python Package-based OCR (Default) ---
+            console.log("Starting Python package-based OCR...");
+            const pythonOptions = {
+                mode: 'text',
+                pythonOptions: ['-u'],
+                scriptPath: './ocr_scripts/',
+                args: [tempFilePath, ocrLanguage]
+            };
+            const results = await PythonShell.run('process_pdf.py', pythonOptions);
+            ocrText = results.join('\n');
+        }
         
         console.log("OCR processing finished successfully.");
         res.json({ ocrText });
 
     } catch (error) {
-        console.error('Python OCR Script Error:', error);
-        res.status(500).json({ error: 'Failed to process file with Python OCR.', details: error.message });
+        console.error('OCR Processing Error:', error);
+        res.status(500).json({ error: 'Failed to process file on backend.', details: error.message || "Unknown error" });
     } finally {
-        // --- IMPORTANT: Clean up the temporary file ---
         if (fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
-            console.log(`Cleaned up temporary file: ${tempFilePath}`);
+            console.log(`Cleaned up temp file: ${tempFilePath}`);
         }
     }
 });
 
-/**
- * API ENDPOINT: /api/agent (No changes needed here)
- * Uses the OpenAI API to execute an agent's prompt.
- */
+// The /api/agent endpoint remains unchanged.
 app.post('/api/agent', async (req, res) => {
-    // This function remains exactly the same
+    // ... (paste the existing /api/agent function here)
     const { agent, inputText } = req.body;
     console.log(`Received agent execution request for: ${agent.name}`);
     try {
