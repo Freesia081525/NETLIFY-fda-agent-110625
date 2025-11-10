@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Settings, Play, ChevronRight, Eye, Download, Moon, Sun, Palette, X, Sparkles, Flower2 } from 'lucide-react';
 
-// The backend URL will be provided by Netlify's environment variables
-// Ensure you have set REACT_APP_RENDER_API_URL in your Netlify site settings
-const RENDER_API_URL = process.env.REACT_APP_RENDER_API_URL;
+// --- MODIFICATION: Hardcode your Render backend URL here ---
+// Replace the placeholder URL with the actual URL of your backend service deployed on Render.
+const RENDER_API_URL = "https://your-backend-name.onrender.com"; // <-- PASTE YOUR RENDER URL HERE
 
 const AgenticDocProcessor = () => {
   // Theme and style configurations
@@ -15,7 +15,7 @@ const AgenticDocProcessor = () => {
     { name: '櫻花 Sakura', primary: '#FFB7C5', secondary: '#FFF0F5', accent: '#FF69B4', gradient: 'from-pink-200 to-pink-50' },
     { name: '薰衣草 Lavender', primary: '#E6E6FA', secondary: '#F8F8FF', accent: '#9370DB', gradient: 'from-purple-200 to-purple-50' },
     { name: '向日葵 Sunflower', primary: '#FFD700', secondary: '#FFFACD', accent: '#FFA500', gradient: 'from-yellow-200 to-yellow-50' },
-    { name: '玫瑰花 Rose', primary: '#FF6B9D', secondary: '#FFE5EC', accent: '#C71585', gradient: 'from-rose-200 to-rose-50' },
+    { name: '玫瑰 Rose', primary: '#FF6B9D', secondary: '#FFE5EC', accent: '#C71585', gradient: 'from-rose-200 to-rose-50' },
     { name: '蓮花 Lotus', primary: '#FFB6C1', secondary: '#FFF5F7', accent: '#FF1493', gradient: 'from-pink-300 to-pink-100' },
   ];
 
@@ -55,13 +55,15 @@ const AgenticDocProcessor = () => {
     if (!file) return;
     setFileName(file.name);
     setFileObject(file);
-    setDocument(''); // Reset document on new file upload
+    setDocument('');
   };
 
   const handleProcessAndPreview = async () => {
     if (!fileObject) return;
-    if (!RENDER_API_URL) {
-      alert("Backend API URL is not configured. Please set REACT_APP_RENDER_API_URL in your Netlify site settings.");
+
+    // This check is now for the hardcoded placeholder
+    if (RENDER_API_URL === "https://your-backend-name.onrender.com") {
+      alert("Please replace the placeholder URL in App.jsx with your real backend URL.");
       return;
     }
 
@@ -95,10 +97,6 @@ const AgenticDocProcessor = () => {
   };
 
   const executeAgent = async (index) => {
-    if (!RENDER_API_URL) {
-      alert("Backend API URL is not configured. Please set REACT_APP_RENDER_API_URL in your Netlify site settings.");
-      return;
-    }
     setIsExecutingAgents(true);
     const agent = agents[index];
     const prevOutput = index === 0 ? document : agentOutputs[index - 1].output;
@@ -143,6 +141,7 @@ const AgenticDocProcessor = () => {
     setAgents(newAgents);
   };
 
+  // The entire JSX return statement remains the same.
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.text} transition-colors duration-300`}>
       {/* Header */}
@@ -269,8 +268,10 @@ const AgenticDocProcessor = () => {
           </div>
         )}
 
+        {/* Other steps are unchanged */}
         {/* Step: Config */}
         {step === 'config' && (
+          // Paste the Config step JSX from previous versions here
           <div className="max-w-6xl mx-auto">
             <div className={`${theme.card} rounded-2xl p-8 border-2`} style={{ borderColor: style.primary }}>
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Settings style={{ color: style.accent }} /> 代理設定</h2>
@@ -312,9 +313,10 @@ const AgenticDocProcessor = () => {
 
         {/* Step: Execute */}
         {step === 'execute' && (
+          // Paste the Execute step JSX from previous versions here
           <div className="max-w-7xl mx-auto">
             <div className={`${theme.card} rounded-2xl p-8 border-2 mb-6`} style={{ borderColor: style.primary }}>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Play style={{ color: style.accent }} /> 執行代理 ({currentAgentIndex < selectedAgentCount ? currentAgentIndex + 1 : selectedAgentCount} / {selectedAgentCount})</h2>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Play style={{ color: style.accent }} /> 執行代理 ({currentAgentIndex < selectedAgentCount ? currentAgentNext + 1 : selectedAgentCount} / {selectedAgentCount})</h2>
               {currentAgentIndex < selectedAgentCount && (
                 <div className="p-6 rounded-xl mb-6" style={{ backgroundColor: style.secondary, borderLeft: `6px solid ${style.accent}` }}>
                   <h3 className="font-bold text-xl mb-4" style={{ color: style.accent }}>當前代理: {agents[currentAgentIndex].name}</h3>
