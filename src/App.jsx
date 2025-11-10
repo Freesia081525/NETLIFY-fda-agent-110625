@@ -1,8 +1,9 @@
+#const RENDER_API_URL = "https://netlify-fda-agent-110625-1.onrender.com"; // <-- PASTE YOUR RENDER URL HERE
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Settings, Play, ChevronRight, Eye, Download, Moon, Sun, Palette, X, Sparkles, Flower2 } from 'lucide-react';
 
-// --- MODIFICATION: Hardcode your Render backend URL here ---
-// Replace the placeholder URL with the actual URL of your backend service deployed on Render.
+// --- IMPORTANT ---
+// Paste the URL of your backend service deployed on Render here.
 const RENDER_API_URL = "https://netlify-fda-agent-110625-1.onrender.com"; // <-- PASTE YOUR RENDER URL HERE
 
 const AgenticDocProcessor = () => {
@@ -26,6 +27,7 @@ const AgenticDocProcessor = () => {
   const [fileObject, setFileObject] = useState(null);
   const [document, setDocument] = useState('');
   const [fileName, setFileName] = useState('');
+  const [ocrMethod, setOcrMethod] = useState('python'); // 'python' or 'llm'
   const [ocrLanguage, setOcrLanguage] = useState('traditional-chinese');
   const [agents, setAgents] = useState([]);
   const [selectedAgentCount, setSelectedAgentCount] = useState(5);
@@ -60,8 +62,6 @@ const AgenticDocProcessor = () => {
 
   const handleProcessAndPreview = async () => {
     if (!fileObject) return;
-
-    // This check is now for the hardcoded placeholder
     if (RENDER_API_URL === "https://your-backend-name.onrender.com") {
       alert("Please replace the placeholder URL in App.jsx with your real backend URL.");
       return;
@@ -73,6 +73,7 @@ const AgenticDocProcessor = () => {
     formData.append('file', fileObject);
     formData.append('fileName', fileName);
     formData.append('ocrLanguage', ocrLanguage);
+    formData.append('ocrMethod', ocrMethod); 
 
     try {
       const response = await fetch(`${RENDER_API_URL}/api/ocr`, {
@@ -100,7 +101,6 @@ const AgenticDocProcessor = () => {
     setIsExecutingAgents(true);
     const agent = agents[index];
     const prevOutput = index === 0 ? document : agentOutputs[index - 1].output;
-    
     const startTime = Date.now();
     try {
         const response = await fetch(`${RENDER_API_URL}/api/agent`, {
@@ -114,15 +114,12 @@ const AgenticDocProcessor = () => {
         }
         const data = await response.json();
         const endTime = Date.now();
-
         const newOutputs = [...agentOutputs];
         newOutputs[index] = { input: prevOutput, output: data.output, time: (endTime - startTime) / 1000 };
         setAgentOutputs(newOutputs);
-        
         if (index < selectedAgentCount - 1) {
             setCurrentAgentIndex(index + 1);
         }
-
     } catch(error) {
         console.error('Error during agent execution:', error);
         alert(`Failed to execute agent on the backend: ${error.message}`);
@@ -131,17 +128,13 @@ const AgenticDocProcessor = () => {
     }
   };
 
-  const handleDocumentChange = (e) => {
-    setDocument(e.target.value);
-  };
-  
+  const handleDocumentChange = (e) => setDocument(e.target.value);
   const updateAgentParam = (index, field, value) => {
     const newAgents = [...agents];
     newAgents[index][field] = value;
     setAgents(newAgents);
   };
 
-  // The entire JSX return statement remains the same.
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.text} transition-colors duration-300`}>
       {/* Header */}
@@ -225,8 +218,28 @@ const AgenticDocProcessor = () => {
               {fileObject && (
                 <div className="space-y-4 mb-6">
                     <div>
-                        <label className="block font-semibold mb-2">OCR 語言 (僅適用於PDF中的圖片)</label>
-                        <select value={ocrLanguage} onChange={(e) => setOcrLanguage(e.target.value)} className="w-full p-3 rounded-lg border-2" style={{ borderColor: style.primary }}>
+                        <label className="block font-semibold mb-2">OCR 處理方法</label>
+                        <select 
+                          value={ocrMethod} 
+                          onChange={(e) => setOcrMethod(e.target.value)} 
+                          className="w-full p-3 rounded-lg border-2" 
+                          style={{ borderColor: style.primary }}
+                          disabled={fileObject.type !== 'application/pdf'}
+                        >
+                            <option value="python">Python Packages (Hybrid Speed/Accuracy)</option>
+                            <option value="llm">LLM-based OCR (GPT-4o Vision, High Accuracy)</option>
+                        </select>
+                        {fileObject.type !== 'application/pdf' && <p className="text-sm opacity-75 mt-1">OCR方法選擇僅適用於PDF文件。</p>}
+                    </div>
+                    <div>
+                        <label className="block font-semibold mb-2">OCR 語言 (用於PDF中的圖片)</label>
+                        <select 
+                          value={ocrLanguage} 
+                          onChange={(e) => setOcrLanguage(e.target.value)} 
+                          className="w-full p-3 rounded-lg border-2" 
+                          style={{ borderColor: style.primary }}
+                          disabled={fileObject.type !== 'application/pdf'}
+                        >
                             <option value="english">English</option>
                             <option value="traditional-chinese">繁體中文</option>
                         </select>
@@ -268,10 +281,8 @@ const AgenticDocProcessor = () => {
           </div>
         )}
 
-        {/* Other steps are unchanged */}
         {/* Step: Config */}
         {step === 'config' && (
-          // Paste the Config step JSX from previous versions here
           <div className="max-w-6xl mx-auto">
             <div className={`${theme.card} rounded-2xl p-8 border-2`} style={{ borderColor: style.primary }}>
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Settings style={{ color: style.accent }} /> 代理設定</h2>
@@ -313,10 +324,9 @@ const AgenticDocProcessor = () => {
 
         {/* Step: Execute */}
         {step === 'execute' && (
-          // Paste the Execute step JSX from previous versions here
           <div className="max-w-7xl mx-auto">
             <div className={`${theme.card} rounded-2xl p-8 border-2 mb-6`} style={{ borderColor: style.primary }}>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Play style={{ color: style.accent }} /> 執行代理 ({currentAgentIndex < selectedAgentCount ? currentAgentNext + 1 : selectedAgentCount} / {selectedAgentCount})</h2>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Play style={{ color: style.accent }} /> 執行代理 ({currentAgentIndex < selectedAgentCount ? currentAgentIndex + 1 : selectedAgentCount} / {selectedAgentCount})</h2>
               {currentAgentIndex < selectedAgentCount && (
                 <div className="p-6 rounded-xl mb-6" style={{ backgroundColor: style.secondary, borderLeft: `6px solid ${style.accent}` }}>
                   <h3 className="font-bold text-xl mb-4" style={{ color: style.accent }}>當前代理: {agents[currentAgentIndex].name}</h3>
@@ -348,7 +358,7 @@ const AgenticDocProcessor = () => {
                 </div>
               )}
 
-              {currentAgentIndex >= selectedAgentCount - 1 && agentOutputs[selectedAgentCount-1]?.output && (
+              {currentAgentIndex >= selectedAgentIndex - 1 && agentOutputs[selectedAgentCount-1]?.output && (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">🎉</div>
                   <h3 className="text-3xl font-bold mb-6" style={{ color: style.accent }}>所有代理執行完成！</h3>
