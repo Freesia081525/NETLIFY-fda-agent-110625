@@ -2,7 +2,7 @@
 FROM node:18-slim
 
 # Set working directory
-WORKDIR /opt/render/project/src
+WORKDIR /opt/render/project/server
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
